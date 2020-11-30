@@ -1,0 +1,315 @@
+---
+title: "Statistical Simulation: Midterm II"
+author: "H24071320"
+output: 
+  html_document:
+  #pdf_document:
+  code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#set.seed("the last four digits of the student ID")
+set.seed(1320)
+my.p <- round(runif(1), 2)
+my.x <- sample(1:10, 2)
+my.r <- sample(1:10, 1)
+my.alpha <- round(rgamma(1,1,1), 2)
+my.beta <- round(rgamma(1,1,1), 2)
+library(pracma)
+```
+
+# Problem 1
+
+Use the rejection method to find an efficient way to generate a random variable having density function (15%)
+$$f(x)=\frac{1}{2}(1+x)e^{-x},0<x<\infty$$
+
+
+```{r}
+f <- function(x) {0.5*(1+x)*exp(-x)}
+c_f <- function(x) {(1+x)*exp(x)/8/x^2} #f/g
+h <- function(x) {(exp(x)*x^2-2*exp(x))/(8*x^3)} #d f/g
+n <- 5000
+X <- c()
+for (i in 1:n){
+   k <- 1
+   while (TRUE) {
+     Y <- -log(prod(runif(3))) / 2  # Y∼Gamma(3,2)
+     U <- runif(1)
+     if ( U < c_f(Y)/1.5 ) {  
+       X[i] <- Y
+       break()
+     }
+   }
+}
+plot(density(X), main="", xlab="X")
+curve(f, from=0, col="red", add=T)
+legend("topright", c("simulation", "exact"), col=c(1,2), lty=1)
+```
+
+
+# Problem 2
+
+Use simulation to approximate the following integrals. (20\%)
+
+(a). $\int_0^1 e^{e^x}dx$  
+
+```{r}
+# Ans
+# (a)
+
+n <- 50000
+u <- runif(n)
+h <- function(y){
+  a <- 0
+  b <- 1
+  g <- function(x) exp(exp(x))
+  (b-a)*g( a+(b-a)*y )
+}
+mean(h(u))
+fun <- function(x) exp(exp(x))
+integral(fun,xmin=0,xmax = 1)
+```
+
+
+(b). $\int_{-2}^2 e^{x+x^2}dx$  
+
+```{r}
+# Ans
+# (b)
+set.seed(1320)
+n <- 50000
+u <- runif(n)
+h <- function(y){
+  a <- -2
+  b <- 2
+  g <- function(x) exp(x+x^2)
+  (b-a)*g( a+(b-a)*y )
+}
+mean(h(u))
+fun <- function(x) exp(x+x^2)
+integral(fun,xmin=-2,xmax = 2)
+```
+
+
+(c). $\int_0^1 \int_0^1 e^{(x+y)^2}dydx$  
+
+```{r}
+# Ans
+# (c)
+#two-dimension integral
+#method1
+set.seed(1320)
+k <- 80000
+gi <- c()
+g <- function(x,y) exp((x+y)^2)
+for(i in 1:k){
+  u <- runif(2)
+  u1 <- u[1];u2 <- u[2]
+  gi[i] <- g(u1,u2)
+}
+mean(gi)
+
+fun <- function(x,y) exp((x+y)^2)
+integral2(fun,xmin=0,xmax = 1,ymin=0,ymax=1)
+```
+
+
+(d). $\int_0^\infty \int_0^x \exp^{-(x+y)}dydx$
+
+
+```{r}
+# Ans
+# (d)
+set.seed(1320)
+k <- 80000
+gi <- c()
+g <- function(x,y) exp(-(x+y))
+for(i in 1:k){
+  u <- runif(2)
+  u1 <- u[1];u2 <- u[2]
+  gi[i] <- g(u1,u2)
+}
+mean(gi)
+fun <- function(x,y) exp(-(x+y))
+ymax <- function(x) 1 - x
+integral2(fun,xmin=0,xmax = 1,ymin=0,ymax)
+```
+
+
+# Problem 3
+
+Write a program to generate $B$ values from the probability mass function $\Pr\{X= `r my.x[1]`\} = `r my.p`$ and $\Pr\{X= `r my.x[2]`\} = `r 1-my.p`$. Let $B = 1000$, run the program, and determine the proportion of values that are equal to `r sample(my.x, 1)`.  (10\%)
+
+```{r}
+# Ans
+p <- c(0.73,0.27)
+n <- 1000
+k <- c()
+u <- runif(n)
+x0 <- which(u<p[1])
+k[x0] <- 7
+x1 <- which((u>=p[1])&(u<sum(p[1:2])))
+k[x1] <- 8
+table(k)
+```
+
+
+# Problem 4  
+
+Show how to generate a random variable whose distribution function
+$$F(x)=1-e^{-(\frac{x}{\alpha})^\beta},0<x<\infty$$
+using  
+
+(a) the inverse transform method (10\%) (b) the rejection method. Assume that $\alpha=`r my.alpha`$ and $\beta= `r my.beta`$ (10\%)
+
+
+## the inverse transform method
+
+```{r}
+# Ans 
+U <- runif(5000)
+alpha<-0.19
+beta<-0.01
+Y <- (-log(1-U)/alpha)^(1/beta)
+plot(density(Y, from=0), main="", xlab="Y")
+curve(dexp(x, rate=1), from=0, col="red", add=T)
+legend("topright", c("simulation", "exact"), col=c(1,2), lty=1)
+```
+
+## the rejection method
+
+```{r}
+# Ans 
+
+```
+### the max of function is Infinite, X would be 0
+
+# Problem 5  
+
+Give three methods to for generating a Negative Binomial $NB(r=`r my.r`, p=`r my.p`)$ random variable. (15\%)
+
+## method I  
+
+```{r}
+# Ans 
+set.seed(1320)
+my.rnb<-function(r, p) {
+  U <- runif(n = r)
+  # number of trials
+  sum( floor( log(U)/log(1-p) ) + 1)
+  # number of failures
+  # sum( floor( log(U)/log(1-p) ))
+}
+B <- 10000
+r <- 5
+p <- 0.73
+X <- c()
+for (i in 1:B) {
+  X[i]<-my.rnb(r=r, p=p)
+}
+mean(X) 
+mean(rnbinom(B, size = r, prob=p)+r)
+```
+
+## method II  
+
+```{r}
+# Ans
+my.rnb2<-function(r, p){
+ pr <- p^r # j=r
+ ef <- pr
+ U <- runif(1)
+ j <- r
+ if (U<ef) {
+   x <- j
+ } else {
+  while (U > ef) {
+    pr <- ( (j*(1-p))/(j+1-r) )*pr
+    ef <- ef+pr
+    j <- j+1
+  }
+  x <- j
+ }
+ return(x)
+}
+set.seed(1320)
+B <- 1000
+r <- 5
+Y <- c()
+p <- 0.73
+for (i in 1:B) {
+  Y[i] <- my.rnb2(r=r, p=p)
+}
+mean(Y)
+mean(rnbinom(B, size = r, prob=p)+r)
+```
+
+## method III  
+
+```{r}
+# Ans 
+my.rnb3<-function(r, p){
+ pr <- p^r # j=0
+ ef <- pr
+ U <- runif(1)
+ j <- 0
+ if (U<ef) {
+   x <- j
+ } else {
+  while (U > ef) {
+    pr <- ( ((j+1+r-1)*(1-p))/(j+1) )*pr
+    ef <- ef+pr
+    j <- j+1
+  }
+  x <- j
+ }
+ return(x)
+}
+set.seed(1320)
+B <- 1000
+r <- 5
+Y <- c()
+p <- 0.73
+for (i in 1:B) {
+  Y[i] <- my.rnb3(r=r, p=p)
+}
+mean(Y)+r
+mean(rnbinom(B, size = r, prob=p)+r)
+```
+
+
+# Problem 6
+
+Give two methods for generating a random variable having density function (20\%)  
+$$
+f(x)=\left\{
+\begin{array}{ccc}
+e^{2x} & , & -\infty <x <0 \\
+e^{-2x} & , & 0< x < \infty\\
+\end{array}
+\right.
+$$
+
+## Method I:   
+
+```{r}
+# Ans 
+# Answer
+U <- runif(5000)
+Y <- -log(1-U)/2
+X<- log(1-U)/2
+plot(density(Y,from = 0), main="", xlab="Y")
+plot(density(c(X,Y)), main="", xlab="Y")
+```
+
+## Method II:
+
+
+```{r}
+# Ans
+U <- runif(5000)
+Y1 <- log(2*U)/2
+Y2 <- -log(2-2*U)/2
+plot(density(c(Y1,Y2)), main="", xlab="Y")
+```
